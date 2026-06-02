@@ -31,7 +31,7 @@
 </script>
 
 <div
-  class="max-w-[80%] min-w-0 sm:min-w-96 rounded-2xl px-4 py-3 leading-relaxed text-wrap {sender === username
+  class="max-w-[90%] md:max-w-[80%] min-w-0 sm:min-w-96 rounded-2xl px-3 py-2 md:px-4 md:py-3 leading-relaxed text-wrap {sender === username
     ? 'self-end bg-mocha-mauve text-mocha-base'
     : 'self-start bg-mocha-surface-0 text-mocha-text'}"
 >

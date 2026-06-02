@@ -124,6 +124,24 @@
   {/if}
 </Dialog>
 
+<div class="md:hidden border-b border-mocha-surface-2">
+  <div class="flex items-center gap-2 px-3 py-1 text-xs text-mocha-overlay-1">
+    <span class="font-bold text-mocha-mauve">{gameState.current?.messages ?? 0}</span>
+    <span class="text-mocha-overlay-0">msg</span>
+    <span class="text-mocha-overlay-0">&middot;</span>
+    <span class="font-bold text-mocha-sapphire">{gameState.current?.characters ?? 0}</span>
+    <span class="text-mocha-overlay-0">chr</span>
+    <span class="text-mocha-overlay-0">&middot;</span>
+    <span class="font-bold text-mocha-green">{gameState.current?.points ?? 0}</span>
+    <span class="text-mocha-overlay-0">pts</span>
+    <div class="flex-1"></div>
+    <span class="text-mocha-overlay-0">{onlineUsers.length} online</span>
+  </div>
+  <div class="h-0.5 w-full bg-mocha-surface-2">
+    <div class="h-full bg-mocha-mauve transition-all duration-300" style="width: {Math.min(milestoneProgress, 100)}%"></div>
+  </div>
+</div>
+
 <div class="flex flex-1 flex-row min-h-0">
   <div class="flex flex-col flex-1 min-w-0">
     <div bind:this={scrollContainer} class="flex-1 overflow-y-auto flex flex-col gap-2 p-2">
@@ -153,7 +171,7 @@
     </div>
   </div>
 
-  <aside class="w-60 shrink-0 border-l border-mocha-surface-2 p-4 flex flex-col gap-4">
+  {#snippet statsPanel()}
     <h2 class="text-sm font-semibold uppercase tracking-wider text-mocha-overlay-1">Stats</h2>
     <div class="flex flex-col gap-1">
       <span class="text-xs text-mocha-overlay-0">Messages sent</span>
@@ -203,5 +221,10 @@
         </div>
       </div>
     {/if}
+  {/snippet}
+
+  <aside class="hidden md:block w-60 shrink-0 border-l border-mocha-surface-2 p-4 flex flex-col gap-4">
+    {@render statsPanel()}
   </aside>
+
 </div>

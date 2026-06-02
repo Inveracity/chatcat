@@ -2,14 +2,16 @@ services:
 
   chatcat:
     container_name: chatcat
-    image: oven/bun:latest
-    working_dir: /user/src/app
+    image: inveracity/chatcat:latest
+    build:
+      dockerfile: docker/chatcat.dockerfile
+      context: .
+    working_dir: /build
     command: ["bun", "run", "index.js"]
     ports:
       - 3000:3000
     volumes:
-      - ./data/:/user/src/app/data
-      - ./build/:/user/src/app
+      - ./data/:/build/data
     environment:
       - "ORIGIN=http://localhost:3000"
     labels:
@@ -18,3 +20,4 @@ services:
       - traefik.http.routers.ui.entrypoints=websecure
       - traefik.http.routers.ui.tls.certresolver=myresolver
       - traefik.http.routers.ui.tls=true
+    restart: "unless-stopped"
