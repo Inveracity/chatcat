@@ -1,10 +1,12 @@
 import * as v from 'valibot'
 import { query, form } from '$app/server';
+import { MESSAGE_TTL } from '$lib';
 
 interface Messages {
     id: number
     sender: string
     text: string
+    createdAt: number
 }
 
 const messages: Messages[] = [];
@@ -21,14 +23,31 @@ export const getMessages = query.live(async function* () {
     }
 });
 
+function notify() {
+    for (const listener of listeners) listener();
+    listeners.clear();
+}
+
+function scheduleRemove(msg: Messages, ms: number) {
+    setTimeout(() => {
+        const idx = messages.indexOf(msg);
+        if (idx !== -1) {
+            messages.splice(idx, 1);
+            notify();
+        }
+    }, ms);
+}
+
 export const sendMessages = form(
     v.object({
         text: v.pipe(v.string(), v.minLength(1), v.maxLength(1000)),
         sender: v.pipe(v.string(), v.minLength(1), v.maxLength(1000))
     }),
     async ({ sender, text }) => {
-        messages.push({ id: id++, sender, text });
-        for (const listener of listeners) listener();
-        listeners.clear()
+
+        const msg = { id: id++, sender, text, createdAt: Date.now() };
+        messages.push(msg);
+        notify();
+        scheduleRemove(msg, MESSAGE_TTL);
     }
 )
