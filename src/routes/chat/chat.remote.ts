@@ -3,7 +3,7 @@ import { query, form } from '$app/server';
 import { MESSAGE_TTL } from '$lib';
 import { getStats, incrementStats } from '$lib/server/db';
 import { calculatePoints, getNextMilestone } from '$lib/server/game';
-import { setNotifyCallback, startVote, castVote, getVoteState } from '$lib/server/voting';
+import { setNotifyCallback, setOnUpgradeEffect, startVote, castVote, getVoteState, getActiveUpgrades } from '$lib/server/voting';
 import type { GameState } from '$lib/types';
 
 interface Message {
@@ -25,6 +25,19 @@ function notify() {
 
 setNotifyCallback(notify);
 
+setOnUpgradeEffect((upgradeId) => {
+	if (upgradeId === 'bonus-points') {
+		incrementStats(0, 200);
+	} else if (upgradeId === 'cat-spam') {
+		for (let i = 0; i < 100; i++) {
+			const msg: Message = { id: id++, sender: '🐱', text: 'meow', createdAt: Date.now() };
+			messages.push(msg);
+			scheduleRemove(msg, MESSAGE_TTL);
+		}
+	}
+	notify();
+});
+
 export const getMessages = query.live(async function* () {
 	while (true) {
 		yield messages;
@@ -44,6 +57,7 @@ export const getGameState = query.live(async function* () {
 			points: stats.points,
 			nextMilestone: getNextMilestone(stats.points),
 			vote: vote && vote.active ? vote : null,
+			activeUpgrades: getActiveUpgrades(),
 		}
 		yield state;
 		const { promise, resolve } = Promise.withResolvers();
@@ -70,7 +84,8 @@ export const sendMessages = form(
 	async ({ sender, text }) => {
 		const stats = getStats();
 		const oldPoints = stats.points;
-		const points = calculatePoints(text);
+		const activeUpgrades = getActiveUpgrades();
+		const points = calculatePoints(text, activeUpgrades.map(u => u.id));
 		incrementStats(text.length, points);
 		const newPoints = oldPoints + points;
 

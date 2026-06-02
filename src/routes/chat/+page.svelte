@@ -23,14 +23,18 @@
   let voteVotes = $derived(gameState.current?.vote?.votes ?? {});
   let myVote = $derived(voteVotes[username]);
   let winner = $derived(gameState.current?.vote?.winner ?? null);
+  let activeUpgrades = $derived(gameState.current?.activeUpgrades ?? []);
+
+  let upgradeRemaining = $derived.by(() => {
+    return activeUpgrades.map(u => ({
+      ...u,
+      remaining: Math.max(0, Math.floor((u.expiresAt - Date.now()) / 1000))
+    }));
+  });
 
   $effect(() => {
-    if (!voteActive) {
-      remaining = 0;
-      return;
-    }
     const update = () => {
-      remaining = Math.max(0, Math.floor((voteEndsAt - Date.now()) / 1000));
+      remaining = voteActive ? Math.max(0, Math.floor((voteEndsAt - Date.now()) / 1000)) : 0;
     };
     update();
     const interval = setInterval(update, 1000);
@@ -142,5 +146,17 @@
         ></div>
       </div>
     </div>
+
+    {#if upgradeRemaining.length > 0}
+      <div class="flex flex-col gap-2">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-mocha-overlay-1">Active Upgrades</h2>
+        {#each upgradeRemaining as upgrade}
+          <div class="flex items-center justify-between rounded-lg bg-mocha-surface-0 px-3 py-2">
+            <span class="text-sm text-mocha-text">{upgrade.name}</span>
+            <span class="text-xs text-mocha-green">{upgrade.remaining}s</span>
+          </div>
+        {/each}
+      </div>
+    {/if}
   </aside>
 </div>

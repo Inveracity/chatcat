@@ -1,6 +1,9 @@
-import type { VoteState, UpgradeOption } from '$lib/types'
+import type { VoteState, UpgradeOption, ActiveUpgrade } from '$lib/types'
 
 const VOTE_DURATION = 20_000
+const UPGRADE_DURATION = 30_000
+
+const TIMED_UPGRADES = new Set(['double-time', 'vowel-power', 'per-minute', 'long-word-bonus'])
 
 const UPGRADE_POOL: UpgradeOption[] = [
 	{ id: 'double-time', name: 'Double Time', description: '2× points for 30s' },
@@ -14,14 +17,38 @@ const UPGRADE_POOL: UpgradeOption[] = [
 let currentVote: VoteState | null = null
 let voteTimer: Timer | null = null
 let notifyCallback: (() => void) | null = null
+let activeUpgrades: ActiveUpgrade[] = []
+let onUpgradeEffect: ((upgradeId: string) => void) | null = null
 
 export function setNotifyCallback(fn: () => void) {
 	notifyCallback = fn
 }
 
+export function setOnUpgradeEffect(fn: (upgradeId: string) => void) {
+	onUpgradeEffect = fn
+}
+
 function pickOptions(): UpgradeOption[] {
 	const shuffled = [...UPGRADE_POOL].sort(() => Math.random() - 0.5)
 	return shuffled.slice(0, 3)
+}
+
+function addActiveUpgrade(upgrade: UpgradeOption) {
+	const expiresAt = Date.now() + UPGRADE_DURATION
+	const entry: ActiveUpgrade = { id: upgrade.id, name: upgrade.name, expiresAt }
+	activeUpgrades.push(entry)
+	setTimeout(() => {
+		activeUpgrades = activeUpgrades.filter(u => u !== entry)
+		notifyCallback?.()
+	}, UPGRADE_DURATION)
+}
+
+function handleUpgradeEffect(upgrade: UpgradeOption) {
+	if (TIMED_UPGRADES.has(upgrade.id)) {
+		addActiveUpgrade(upgrade)
+	}
+	onUpgradeEffect?.(upgrade.id)
+	notifyCallback?.()
 }
 
 function tallyVote(): void {
@@ -39,6 +66,9 @@ function tallyVote(): void {
 		currentVote.winner = topOptions[Math.floor(Math.random() * topOptions.length)]
 	}
 	currentVote.active = false
+
+	const winningUpgrade = currentVote.options[currentVote.winner]
+	handleUpgradeEffect(winningUpgrade)
 }
 
 export function startVote(): boolean {
@@ -55,7 +85,6 @@ export function startVote(): boolean {
 	voteTimer = setTimeout(() => {
 		if (currentVote?.active) {
 			tallyVote()
-			notifyCallback?.()
 		}
 	}, VOTE_DURATION)
 	notifyCallback?.()
@@ -73,4 +102,8 @@ export function castVote(sender: string, optionIndex: number): boolean {
 
 export function getVoteState(): VoteState | null {
 	return currentVote
+}
+
+export function getActiveUpgrades(): ActiveUpgrade[] {
+	return [...activeUpgrades]
 }

@@ -18,10 +18,17 @@ export interface VoteState {
 	winner: number | null
 }
 
+export interface ActiveUpgrade {
+	id: string
+	name: string
+	expiresAt: number
+}
+
 export interface GameState {
 	messages: number
 	characters: number
 	points: number
 	nextMilestone: number
 	vote: VoteState | null
+	activeUpgrades: ActiveUpgrade[]
 }
