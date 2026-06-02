@@ -31,4 +31,5 @@ export interface GameState {
 	nextMilestone: number
 	vote: VoteState | null
 	activeUpgrades: ActiveUpgrade[]
+	onlineUsers: string[]
 }

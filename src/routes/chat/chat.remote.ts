@@ -16,7 +16,32 @@ interface Message {
 const messages: Message[] = [];
 const listeners = new Set<any>();
 
+const onlineUsers = new Map<string, number>();
+const PRESENCE_TIMEOUT = 15_000;
+
 let id = 1;
+
+setInterval(() => {
+	const now = Date.now();
+	let changed = false;
+	for (const [name, lastSeen] of onlineUsers) {
+		if (now - lastSeen > PRESENCE_TIMEOUT) {
+			onlineUsers.delete(name);
+			changed = true;
+		}
+	}
+	if (changed) notify();
+}, 5_000);
+
+function getOnlineUsers(): string[] {
+	const now = Date.now();
+	for (const [name, lastSeen] of onlineUsers) {
+		if (now - lastSeen > PRESENCE_TIMEOUT) {
+			onlineUsers.delete(name);
+		}
+	}
+	return [...onlineUsers.keys()];
+}
 
 function notify() {
 	for (const listener of listeners) listener();
@@ -47,6 +72,16 @@ export const getMessages = query.live(async function* () {
 	}
 });
 
+export const presence = form(
+	v.object({
+		username: v.pipe(v.string(), v.minLength(1)),
+	}),
+	async ({ username }) => {
+		onlineUsers.set(username, Date.now());
+		notify();
+	}
+)
+
 export const getGameState = query.live(async function* () {
 	while (true) {
 		const stats = getStats();
@@ -58,6 +93,7 @@ export const getGameState = query.live(async function* () {
 			nextMilestone: getNextMilestone(stats.points),
 			vote: vote && vote.active ? vote : null,
 			activeUpgrades: getActiveUpgrades(),
+			onlineUsers: getOnlineUsers(),
 		}
 		yield state;
 		const { promise, resolve } = Promise.withResolvers();
@@ -90,7 +126,7 @@ export const sendMessages = form(
 		const newPoints = oldPoints + points;
 
 		if (Math.floor(oldPoints / 500) < Math.floor(newPoints / 500)) {
-			startVote();
+			startVote(getOnlineUsers().length);
 		}
 
 		const msg: Message = { id: id++, sender, text, createdAt: Date.now() };

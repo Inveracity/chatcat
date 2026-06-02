@@ -19,6 +19,7 @@ let voteTimer: Timer | null = null
 let notifyCallback: (() => void) | null = null
 let activeUpgrades: ActiveUpgrade[] = []
 let onUpgradeEffect: ((upgradeId: string) => void) | null = null
+let voteOnlineCount = 0
 
 export function setNotifyCallback(fn: () => void) {
 	notifyCallback = fn
@@ -71,9 +72,10 @@ function tallyVote(): void {
 	handleUpgradeEffect(winningUpgrade)
 }
 
-export function startVote(): boolean {
+export function startVote(onlineCount: number = 0): boolean {
 	if (currentVote?.active) return false
 	if (voteTimer) clearTimeout(voteTimer)
+	voteOnlineCount = onlineCount
 	const options = pickOptions()
 	currentVote = {
 		active: true,
@@ -96,6 +98,10 @@ export function castVote(sender: string, optionIndex: number): boolean {
 	if (currentVote.votes[sender] !== undefined) return false
 	if (optionIndex < 0 || optionIndex >= currentVote.options.length) return false
 	currentVote.votes[sender] = optionIndex
+	if (voteOnlineCount > 0 && Object.keys(currentVote.votes).length >= voteOnlineCount) {
+		clearTimeout(voteTimer!)
+		tallyVote()
+	}
 	notifyCallback?.()
 	return true
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getMessages, getGameState, sendMessages, vote } from "./chat.remote";
+  import { getMessages, getGameState, sendMessages, vote, presence } from "./chat.remote";
   import { page } from "$app/state";
   import Input from "$lib/components/input.svelte";
   import Button from "$lib/components/button.svelte";
@@ -15,7 +15,10 @@
   let username = $derived((page.url.searchParams.get("name") || "").slice(0, 20));
   let messages = getMessages();
   let gameState = getGameState();
+  let presenceForm: HTMLFormElement;
   let messageText = $state("");
+  let messageInput: HTMLInputElement | undefined = $state(undefined);
+  let wasDialogOpen = $state(false);
   let messageLength = $derived(messageText.length);
   let remaining = $state(0);
 
@@ -26,6 +29,8 @@
   let myVote = $derived(voteVotes[username]);
   let winner = $derived(gameState.current?.vote?.winner ?? null);
   let activeUpgrades = $derived(gameState.current?.activeUpgrades ?? []);
+  let onlineUsers = $derived(gameState.current?.onlineUsers ?? []);
+  let totalVotes = $derived(Object.keys(voteVotes).length);
 
   let upgradeRemaining = $derived.by(() => {
     return activeUpgrades.map(u => ({
@@ -55,6 +60,7 @@
     if (username === "") {
       goto("/");
     }
+    tick().then(() => messageInput?.focus());
   });
 
   $effect(() => {
@@ -63,12 +69,31 @@
       scrollContainer?.scroll({ top: scrollContainer.scrollHeight, behavior: 'smooth' });
     });
   });
+
+  $effect(() => {
+    const interval = setInterval(() => {
+      if (presenceForm) presenceForm.requestSubmit();
+    }, 10_000);
+    return () => clearInterval(interval);
+  });
+
+  $effect(() => {
+    const isDialogOpen = voteActive || winner !== null;
+    if (wasDialogOpen && !isDialogOpen) {
+      tick().then(() => messageInput?.focus());
+    }
+    wasDialogOpen = isDialogOpen;
+  });
 </script>
+
+<form {...presence} method="POST" bind:this={presenceForm} class="hidden">
+  <input type="hidden" name="username" value={username} />
+</form>
 
 <Dialog open={voteActive && winner === null} onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter') e.preventDefault(); }}>
   {#if voteActive && winner === null}
     <h2 class="text-lg font-bold text-mocha-text mb-2">Milestone reached! Pick an upgrade</h2>
-    <p class="text-sm text-mocha-overlay-1 mb-4">Vote ends in {remaining}s</p>
+    <p class="text-sm text-mocha-overlay-1 mb-4">Vote ends in {remaining}s &middot; {totalVotes} of {onlineUsers.length} voted</p>
     <form {...vote} method="POST" class="flex flex-col gap-3">
       <Input type="hidden" name="sender" value={username} />
       {#each voteOptions as option, i}
@@ -116,7 +141,7 @@
     <div class="px-2 shrink-0">
       <form {...sendMessages} class="mb-6 flex gap-3">
         <Input type="hidden" name="sender" placeholder="username" bind:value={username} />
-        <Input name="text" placeholder="message" type="text" bind:value={messageText} required />
+        <Input name="text" placeholder="message" type="text" bind:value={messageText} bind:ref={messageInput} autofocus required />
         <Button>{messageLength === 0 ? "send" : messageLength}</Button>
       </form>
 
@@ -165,6 +190,17 @@
             <span class="text-xs text-mocha-green">{upgrade.remaining}s</span>
           </div>
         {/each}
+      </div>
+    {/if}
+
+    {#if onlineUsers.length > 0}
+      <div class="flex flex-col gap-2">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-mocha-overlay-1">Online ({onlineUsers.length})</h2>
+        <div class="flex flex-wrap gap-1">
+          {#each onlineUsers as user}
+            <span class="rounded-full bg-mocha-surface-0 px-2 py-0.5 text-xs text-mocha-text">{user}</span>
+          {/each}
+        </div>
       </div>
     {/if}
   </aside>
