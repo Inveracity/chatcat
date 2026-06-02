@@ -35,4 +35,21 @@
 		color: var(--color-mocha-text);
 		font-family: 'Inter', system-ui, sans-serif;
 	}
+
+	::-webkit-scrollbar {
+		width: 8px;
+	}
+
+	::-webkit-scrollbar-track {
+		background: var(--color-mocha-base);
+	}
+
+	::-webkit-scrollbar-thumb {
+		background: var(--color-mocha-surface-2);
+		border-radius: 4px;
+	}
+
+	::-webkit-scrollbar-thumb:hover {
+		background: var(--color-mocha-overlay-0);
+	}
 }
