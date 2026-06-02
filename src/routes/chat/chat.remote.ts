@@ -1,6 +1,7 @@
 import * as v from 'valibot'
 import { query, form } from '$app/server';
 import { MESSAGE_TTL } from '$lib';
+import { getTotalCount, incrementCount } from '$lib/server/db';
 
 interface Messages {
     id: number
@@ -21,6 +22,15 @@ export const getMessages = query.live(async function* () {
         listeners.add(resolve);
         await promise;
     }
+});
+
+export const getMessageCount = query.live(async function* () {
+	while (true) {
+		yield getTotalCount();
+		const { promise, resolve } = Promise.withResolvers();
+		listeners.add(resolve);
+		await promise;
+	}
 });
 
 function notify() {
@@ -47,6 +57,7 @@ export const sendMessages = form(
 
         const msg = { id: id++, sender, text, createdAt: Date.now() };
         messages.push(msg);
+        incrementCount();
         notify();
         scheduleRemove(msg, MESSAGE_TTL);
     }
