@@ -1,7 +1,7 @@
 import { Database } from 'bun:sqlite'
 import type { Stats } from '$lib/types'
 
-const db = new Database('data/chatcat.db')
+const db = new Database('./data/chatcat.db')
 
 export function migrate() {
 	db.run('PRAGMA journal_mode=WAL')

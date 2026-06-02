@@ -18,7 +18,7 @@ bun run check         # svelte-kit sync + svelte-check (run this before committi
 - **Bun** runtime and package manager
 - **Tailwind CSS v4** — config via `@theme` in `src/routes/layout.css` (no `tailwind.config.js`)
 - **Valibot** — runtime schema validation in remote functions
-- **svelte-adapter-bun** — deploy as standalone Bun server
+- **svelte-adapter-bun** — deploy as standalone Bun server. Patched locally via `bun patch` to add `/^bun:/` to rolldown externals (needed for `bun:sqlite`). Re-run `bun patch svelte-adapter-bun` if node_modules is reinstalled.
 
 ## Architecture
 
