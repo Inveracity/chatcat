@@ -1,5 +1,5 @@
 <script lang="ts">
-	let { open = false, children } = $props()
+	let { open = false, children, ...rest } = $props()
 	let dialog: HTMLDialogElement
 
 	$effect(() => {
@@ -13,7 +13,8 @@
 
 <dialog
 	bind:this={dialog}
-	class="backdrop:bg-black/60 rounded-2xl p-6 w-full max-w-md"
+	class="backdrop:bg-black/60 rounded-2xl p-6 w-full max-w-md bg-mocha-base shadow-2xl shadow-black/50 m-auto"
+	{...rest}
 >
 	{@render children()}
 </dialog>

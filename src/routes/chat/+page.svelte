@@ -7,8 +7,10 @@
   import Error from "$lib/components/error.svelte";
   import Dialog from "$lib/components/Dialog.svelte";
   import { particleBurst } from "$lib/components/particleBurst";
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import { goto } from "$app/navigation";
+
+  let scrollContainer: HTMLDivElement;
 
   let username = $derived((page.url.searchParams.get("name") || "").slice(0, 20));
   let messages = getMessages();
@@ -54,9 +56,16 @@
       goto("/");
     }
   });
+
+  $effect(() => {
+    messages.current;
+    tick().then(() => {
+      scrollContainer?.scroll({ top: scrollContainer.scrollHeight, behavior: 'smooth' });
+    });
+  });
 </script>
 
-<Dialog open={voteActive && winner === null}>
+<Dialog open={voteActive && winner === null} onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter') e.preventDefault(); }}>
   {#if voteActive && winner === null}
     <h2 class="text-lg font-bold text-mocha-text mb-2">Milestone reached! Pick an upgrade</h2>
     <p class="text-sm text-mocha-overlay-1 mb-4">Vote ends in {remaining}s</p>
@@ -92,7 +101,7 @@
 
 <div class="flex flex-1 flex-row min-h-0">
   <div class="flex flex-col flex-1 min-w-0">
-    <div class="flex-1 overflow-y-auto flex flex-col gap-2 p-2">
+    <div bind:this={scrollContainer} class="flex-1 overflow-y-auto flex flex-col gap-2 p-2">
       {#if messages.current}
         {#each messages.current as message (message.id)}
           <div out:particleBurst class="flex flex-col">
